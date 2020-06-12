@@ -1,2 +1,5 @@
 /.vscode
 /target
+.DS_Store
+liblwjgl.dylib
+libopenal.dylib
