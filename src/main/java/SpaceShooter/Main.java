@@ -3,29 +3,23 @@ package SpaceShooter;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.FileLocator;
 import com.jme3.bullet.BulletAppState;
-import com.jme3.jfx.injme.JmeFxContainer;
+import com.jme3.system.AppSettings;
 
 public class Main extends SimpleApplication {
+    private Hud hud;
     private Ship ship;
     private Asteroid asteroid;
     private BulletAppState bulletState;
-    private JmeFxContainer container;
-
-    private void loadJfx() {
-        container = JmeFxContainer.install(this, getGuiNode());
-
-    }
 
     @Override
     public void simpleInitApp() {
-        loadJfx();
-
         flyCam.setEnabled(false);
         assetManager.registerLocator("assets/", FileLocator.class);
 
         bulletState = new BulletAppState();
         stateManager.attach(bulletState);
 
+        hud = new Hud(guiViewPort, assetManager, inputManager, audioRenderer);
         ship = new Ship(rootNode, assetManager, inputManager, cam);
         asteroid = new Asteroid(rootNode, assetManager, 1, 5000);
     }
@@ -45,6 +39,7 @@ public class Main extends SimpleApplication {
                     --w;
                     --ship.bulletCount;
                     --asteroid.asteroidCount;
+                    hud.addScore(1);
                     break;
                 }
             }
@@ -52,6 +47,11 @@ public class Main extends SimpleApplication {
 
     public static void main( String[] args ) {
         Main app = new Main();
+        AppSettings settings = new AppSettings(true);
+        settings.setWidth(1600);
+        settings.setHeight(1000);
+        app.setSettings(settings);
+        app.setShowSettings(false);
         app.start();
     }
 }
