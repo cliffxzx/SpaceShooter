@@ -1,14 +1,6 @@
 package SpaceShooter;
 
-import java.util.ArrayList;
-import java.util.Queue;
-
-import com.jme3.app.SimpleApplication;
 import com.jme3.asset.AssetManager;
-import com.jme3.bounding.BoundingVolume;
-import com.jme3.collision.Collidable;
-import com.jme3.collision.CollisionResults;
-import com.jme3.collision.UnsupportedCollisionException;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -22,13 +14,12 @@ import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.CameraNode;
 import com.jme3.scene.Node;
-import com.jme3.scene.SceneGraphVisitor;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.control.CameraControl.ControlDirection;
 
 public class Ship {
-  public Node node;
-  public Spatial body;
+  public Node ship, bullet;
+  public int bulletCount = 0;
   public Camera cam;
   public CameraNode camNode;
   public float rotateSpeed, moveSpeed;
@@ -37,7 +28,6 @@ public class Ship {
   private InputListener il = new Input();
   private Node rn;
   private Vector3f direction = new Vector3f();
-  private ArrayList<Bullet> bullets = new ArrayList<Bullet>();
 
   Ship(Node _rn, AssetManager _am, InputManager _im, Camera _cam) {
     rn = _rn; am = _am; im = _im; cam = _cam;
@@ -49,24 +39,48 @@ public class Ship {
     bindInput();
   }
 
+  public Spatial bullet(Vector3f pos, Vector3f dir, float speed) {
+    Spatial body = am.loadModel("Models/Ship/test.j3o");
+
+    body.setUserData("pos", pos);
+    body.setUserData("dir", dir);
+    body.setUserData("speed", speed);
+
+    body.setLocalTranslation(pos);
+
+    return body;
+  }
+
   public void shoot() {
-    Bullet blt = new Bullet(am, cam.getDirection().normalize().multLocal(1), node.getLocalTranslation());
-    rn.attachChild(blt.body);
-    bullets.add(blt);
+    Spatial blt = bullet(ship.getLocalTranslation(), cam.getDirection(), 500);
+
+    bullet.attachChild(blt);
+
+    ++bulletCount;
   }
 
   public void update(float tpf) {
-    for(Bullet blt: bullets)
-      blt.update(tpf);
+    for(int w = 0; w < bulletCount; ++w) {
+      Spatial blt = bullet.getChild(w);
+
+      float speed = blt.getUserData("speed");
+      Vector3f dir = blt.getUserData("dir");
+
+      blt.move(dir.mult(speed * tpf));
+    }
   }
 
   private void loadModel() {
-    body = am.loadModel("Models/Ship/test.j3o");
+    Spatial body = am.loadModel("Models/Ship/test.j3o");
+    body.setName("body");
 
-    node = new Node("ship");
-    node.attachChild(body);
+    ship = new Node("ship");
+    ship.attachChild(body);
 
-    rn.attachChild(node);
+    bullet = new Node("bullet");
+
+    rn.attachChild(ship);
+    rn.attachChild(bullet);
   }
 
   private void bindInput() {
@@ -86,9 +100,9 @@ public class Ship {
   private void loadCam() {
     camNode = new CameraNode("ShipCam", cam);
     camNode.setControlDir(ControlDirection.SpatialToCamera);
-    node.attachChild(camNode);
+    ship.attachChild(camNode);
     camNode.setLocalTranslation(new Vector3f(0, 15, -5));
-    camNode.lookAt(node.getLocalTranslation(), Vector3f.UNIT_Y);
+    camNode.lookAt(ship.getLocalTranslation(), Vector3f.UNIT_Y);
     cam.setFrustumFar(100000f);
   }
 
@@ -110,31 +124,31 @@ public class Ship {
       switch(name) {
         case "forward":
           direction.multLocal(moveSpeed * 40f * tpf);
-          node.move(direction);
+          ship.move(direction);
           break;
         case "backward":
           direction.multLocal(-moveSpeed * 40f * tpf);
-          node.move(direction);
+          ship.move(direction);
           break;
         case "left":
           direction.crossLocal(Vector3f.UNIT_Y).multLocal(-moveSpeed * 8f * tpf);
-          node.move(direction);
+          ship.move(direction);
           break;
         case "right":
           direction.crossLocal(Vector3f.UNIT_Y).multLocal(moveSpeed * 8f * tpf);
-          node.move(direction);
+          ship.move(direction);
           break;
         case "rotateLeft":
-          node.rotate(0, -rotateSpeed * 0.1f * tpf, 0);
+          ship.rotate(0, -rotateSpeed * 0.1f * tpf, 0);
           break;
         case "rotateRight":
-          node.rotate(0, rotateSpeed * 0.1f * tpf, 0);
+          ship.rotate(0, rotateSpeed * 0.1f * tpf, 0);
           break;
         case "rotateUp":
-          node.rotate(-rotateSpeed * 0.1f * tpf, 0, 0);
+          ship.rotate(-rotateSpeed * 0.1f * tpf, 0, 0);
           break;
         case "rotateDown":
-          node.rotate(rotateSpeed * 0.1f * tpf, 0, 0);
+          ship.rotate(rotateSpeed * 0.1f * tpf, 0, 0);
           break;
         case "shoot":
           shoot();

@@ -1,57 +1,57 @@
 package SpaceShooter;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.FileLocator;
-import com.jme3.font.BitmapText;
-import com.jme3.light.DirectionalLight;
-import com.jme3.material.Material;
-import com.jme3.scene.CameraNode;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
-import com.jme3.scene.control.CameraControl.ControlDirection;
-import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Quad;
-import com.jme3.system.AppSettings;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
-import com.jme3.math.Vector3f;
-import com.jme3.renderer.Camera;
+import com.jme3.bullet.BulletAppState;
+import com.jme3.jfx.injme.JmeFxContainer;
 
 public class Main extends SimpleApplication {
-    public static void main( String[] args ) {
-        Main app = new Main();
-        app.start();
-    }
-
-    private Spatial test;
     private Ship ship;
-    private Asteroids asteroids;
+    private Asteroid asteroid;
+    private BulletAppState bulletState;
+    private JmeFxContainer container;
+
+    private void loadJfx() {
+        container = JmeFxContainer.install(this, getGuiNode());
+
+    }
 
     @Override
     public void simpleInitApp() {
-        assetManager.registerLocator("assets/", FileLocator.class);
+        loadJfx();
+
         flyCam.setEnabled(false);
+        assetManager.registerLocator("assets/", FileLocator.class);
+
+        bulletState = new BulletAppState();
+        stateManager.attach(bulletState);
 
         ship = new Ship(rootNode, assetManager, inputManager, cam);
-        asteroids = new Asteroids(rootNode, assetManager, 2, 10000);
-
-        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setTexture("ColorMap", assetManager.loadTexture("Interface/Logo/Monkey.jpg"));
-        Geometry ground = new Geometry("ground", new Quad(50, 50));
-        ground.setLocalRotation(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
-        ground.setLocalTranslation(-25, -1, 25);
-        ground.setMaterial(mat);
-        rootNode.attachChild(ground);
+        asteroid = new Asteroid(rootNode, assetManager, 1, 5000);
     }
 
     @Override
     public void simpleUpdate(float tpf) {
         ship.update(tpf);
-        asteroids.update(tpf);
+        asteroid.update(tpf);
+        for(int w = 0; w < ship.bulletCount; ++w)
+            for(int w1 = 0; w1 < asteroid.asteroidCount; ++w1) {
+                if (ship.bullet.getChild(w).getWorldBound().intersects(asteroid.asteroids.getChild(w1).getWorldBound())) {
+                    System.out.println("Collision bullets {" + w + "} asteroid {" + w1 + "}");
+
+                    ship.bullet.detachChildAt(w);
+                    asteroid.asteroids.detachChild(asteroid.asteroids.getChild(w1));
+
+                    --w;
+                    --ship.bulletCount;
+                    --asteroid.asteroidCount;
+                    break;
+                }
+            }
+    }
+
+    public static void main( String[] args ) {
+        Main app = new Main();
+        app.start();
     }
 }
